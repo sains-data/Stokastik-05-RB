@@ -1,0 +1,369 @@
+---
+title: "Analisis Perkembangan IP Mahasiswa Menggunakan Rantai Markov"
+author: "AdityaRahman"
+date: "2025-11-11"
+output: html_document
+---
+
+## 1. Load Library
+
+```{r setup, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(markovchain)
+library(readr)
+library(ggplot2)
+library(knitr)
+library(reshape2)
+library(diagram)
+```
+
+## 2. Load dan Eksplorasi Data
+
+```{r}
+data <- read.csv("dataset.csv")
+head(data)
+cat("Jumlah mahasiswa:", nrow(data), "\n")
+cat("Jumlah semester:", ncol(data)-1, "\n")
+```
+
+## 3. Konversi IP ke Kategori (A, B, C, D)
+
+```{r}
+convert_to_category <- function(ip_range) {
+  if (ip_range == "3.25 - 4.00") return("A")
+  else if (ip_range == "2.76 - 3.25") return("B")
+  else if (ip_range == "2.01 - 2.75") return("C")
+  else return("D")
+}
+
+data_cat <- data %>%
+  select(starts_with("IP")) %>%
+  mutate(across(everything(), ~ sapply(., convert_to_category)))
+
+head(data_cat)
+```
+
+## 4. Hitung Matriks Transisi
+
+```{r}
+states <- c("A","B","C","D")
+counts <- matrix(0, 4, 4, dimnames = list(states, states))
+
+for(i in 1:(ncol(data_cat)-1)){
+  for(j in 1:nrow(data_cat)){
+    from <- data_cat[j,i]
+    to <- data_cat[j,i+1]
+    if(from %in% states && to %in% states) {
+      counts[from, to] <- counts[from, to] + 1
+    }
+  }
+}
+
+cat("Frekuensi Transisi:\n")
+print(counts)
+
+# Matriks Probabilitas dengan Laplace Smoothing
+alpha <- 1
+transition_matrix_prob <- t(apply(counts, 1, function(x) {
+  (x + alpha) / (sum(x) + alpha * length(x))
+}))
+
+cat("\nMatriks Probabilitas Transisi:\n")
+print(round(transition_matrix_prob, 4))
+```
+## 1. Frekuensi Transisi
+
+Bagian ini menunjukkan jumlah transisi yang terjadi antara status yang berbeda. Dalam hal ini, ada empat status yang diwakili oleh huruf **A**, **B**, **C**, dan **D**. Tabel ini menggambarkan berapa kali transisi terjadi dari satu status ke status lainnya.
+
+### Contoh:
+
+- **Baris A (status awal A)** menunjukkan bahwa:
+  - Dari A ke A terjadi **96 kali**,
+  - Dari A ke B terjadi **27 kali**,
+  - Tidak ada transisi dari A ke C atau D.
+
+- **Baris B (status awal B)** menunjukkan:
+  - Dari B ke A terjadi **61 kali**,
+  - Dari B ke B terjadi **87 kali**,
+  - Dari B ke C terjadi **32 kali**,
+  - Dari B ke D terjadi **1 kali**.
+
+- **Baris C (status awal C)** menunjukkan:
+  - Dari C ke A terjadi **31 kali**,
+  - Dari C ke B terjadi **48 kali**,
+  - Dari C ke C terjadi **100 kali**,
+  - Dari C ke D terjadi **14 kali**.
+
+- **Baris D (status awal D)** menunjukkan:
+  - Dari D ke A terjadi **4 kali**,
+  - Dari D ke B terjadi **6 kali**,
+  - Dari D ke C terjadi **7 kali**,
+  - Dari D ke D terjadi **1 kali**.
+
+---
+
+## 2. Matriks Probabilitas Transisi
+
+Matriks ini menunjukkan probabilitas transisi dari satu status ke status lainnya. Probabilitas ini dihitung berdasarkan frekuensi transisi yang ditunjukkan sebelumnya. Nilai-nilai ini menggambarkan kemungkinan untuk berpindah dari satu status ke status lainnya.
+
+### Contoh:
+
+- **Baris A (status awal A)** menunjukkan bahwa:
+  - Probabilitas tetap berada di A adalah **0.7638** (sekitar **76.38%**),
+  - Probabilitas berpindah ke B adalah **0.2205** (sekitar **22.05%**),
+  - Probabilitas berpindah ke C adalah **0.0079** (sekitar **0.79%**),
+  - Probabilitas berpindah ke D adalah **0.0079** (sekitar **0.79%**).
+
+- **Baris B (status awal B)** menunjukkan:
+  - Probabilitas tetap berada di B adalah **0.3351** (sekitar **33.51%**),
+  - Probabilitas berpindah ke A adalah **0.4757** (sekitar **47.57%**),
+  - Probabilitas berpindah ke C adalah **0.1784** (sekitar **17.84%**),
+  - Probabilitas berpindah ke D adalah **0.0108** (sekitar **1.08%**).
+
+- **Baris C (status awal C)** menunjukkan:
+  - Probabilitas tetap berada di C adalah **0.1624** (sekitar **16.24%**),
+  - Probabilitas berpindah ke A adalah **0.2487** (sekitar **24.87%**),
+  - Probabilitas berpindah ke B adalah **0.5127** (sekitar **51.27%**),
+  - Probabilitas berpindah ke D adalah **0.0761** (sekitar **7.61%**).
+
+- **Baris D (status awal D)** menunjukkan:
+  - Probabilitas tetap berada di D adalah **0.2273** (sekitar **22.73%**),
+  - Probabilitas berpindah ke A adalah **0.3182** (sekitar **31.82%**),
+  - Probabilitas berpindah ke B adalah **0.3636** (sekitar **36.36%**),
+  - Probabilitas berpindah ke C adalah **0.0909** (sekitar **9.09%**).
+
+
+## 5. Buat Objek Markov Chain
+
+```{r}
+mc <- new("markovchain", 
+          states = states,
+          transitionMatrix = transition_matrix_prob, 
+          name = "IP Mahasiswa")
+
+print(mc)
+cat("\nIrreducible:", is.irreducible(mc), "\n")
+```
+Irreducible berarti bahwa setiap status dalam rantai Markov ini dapat dicapai dari setiap status lainnya dalam beberapa langkah. Artinya, tidak ada status yang terisolasi (tidak dapat dijangkau dari status lainnya).
+
+Dalam hal ini, hasilnya adalah TRUE, yang menunjukkan bahwa rantai Markov ini irreducible. Dengan kata lain, dari setiap status (A, B, C, D), kita bisa berpindah ke status lainnya dalam beberapa langkah.
+
+
+## 6. Visualisasi Heatmap Matriks Transisi
+
+```{r}
+df_heatmap <- melt(transition_matrix_prob)
+colnames(df_heatmap) <- c("From", "To", "Probability")
+
+ggplot(df_heatmap, aes(x = To, y = From, fill = Probability)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%.3f", Probability)), color = "black", size = 4) +
+  scale_fill_gradient2(low = "white", mid = "lightblue", high = "darkblue", 
+                       midpoint = 0.5) +
+  labs(title = "Heatmap Matriks Probabilitas Transisi",
+       x = "Ke State", y = "Dari State") +
+  theme_minimal()
+```
+
+## 7. Diagram Transisi
+
+```{r}
+par(mar = c(1, 1, 3, 1))
+
+pos <- matrix(c(
+  0.25, 0.75,  # A
+  0.75, 0.75,  # B
+  0.25, 0.25,  # C
+  0.75, 0.25   # D
+), ncol = 2, byrow = TRUE)
+
+openplotmat(main = "Diagram Probabilitas Transisi IP")
+
+for (i in 1:4) {
+  textrect(pos[i,], 0.12, 0.12, 
+           lab = states[i], 
+           box.col = "#87CEEB",
+           cex = 3, box.lwd = 3)
+}
+
+for(i in 1:4) {
+  for(j in 1:4) {
+    prob <- transition_matrix_prob[i,j]
+    if(prob < 0.05) next
+    
+    if(i == j) {
+      selfarrow(pos[i,], path = "R", lwd = 2, arr.length = 0.4)
+      text(pos[i,1] + 0.15, pos[i,2], sprintf("%.2f", prob), 
+           cex = 1.3, col = "blue", font = 2)
+    } else {
+      straightarrow(from = pos[i,], to = pos[j,], lwd = 2, arr.length = 0.4)
+      mid_x <- (pos[i,1] + pos[j,1]) / 2
+      mid_y <- (pos[i,2] + pos[j,2]) / 2
+      text(mid_x, mid_y, sprintf("%.2f", prob), 
+           cex = 1.2, col = "blue", font = 2)
+    }
+  }
+}
+
+text(0.5, 0.05, "A: 3.26-4.00 | B: 2.76-3.25 | C: 2.01-2.75 | D: 1.01-2.00", cex = 1)
+```
+
+## 8. Steady State
+
+```{r}
+if(is.irreducible(mc)) {
+  steady_state <- steadyStates(mc)
+  
+  df_steady <- data.frame(
+    Kategori = states,
+    Probability = as.vector(steady_state)
+  )
+  
+  kable(df_steady, digits = 4, caption = "Distribusi Steady State")
+  
+  ggplot(df_steady, aes(x = Kategori, y = Probability, fill = Kategori)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = sprintf("%.1f%%", Probability*100)), vjust = -0.5) +
+    labs(title = "Distribusi Steady State", y = "Probabilitas") +
+    theme_minimal()
+}
+```
+Grafik ini menunjukkan **probabilitas steady state** untuk masing-masing kategori (A, B, C, D). 
+
+**Steady state** adalah kondisi di mana distribusi status rantai Markov tidak berubah lagi setelah sejumlah langkah transisi.
+
+### Probabilitas Masing-Masing Status:
+- **A** memiliki probabilitas terbesar, yaitu **54.2%**, yang menunjukkan bahwa status A paling sering tercapai atau bertahan dalam steady state.
+- **B** memiliki probabilitas **30.4%**, artinya status B juga cukup sering tercapai dalam steady state, tetapi lebih sedikit dibandingkan A.
+- **C** memiliki probabilitas **13.5%**, yang menunjukkan bahwa status C jarang tercapai dalam steady state.
+- **D** memiliki probabilitas terkecil, yaitu **2.0%**, yang menunjukkan bahwa status D paling jarang tercapai.
+
+
+## 9. PREDIKSI SEMESTER 7 DAN 8
+
+```{r}
+# Distribusi Semester 6
+dist_sem6 <- table(data_cat$IP.Semester.6)
+n_mhs <- nrow(data_cat)
+
+prob_sem6 <- numeric(4)
+names(prob_sem6) <- states
+for(s in states) {
+  prob_sem6[s] <- ifelse(s %in% names(dist_sem6), dist_sem6[s]/n_mhs, 0)
+}
+
+# Prediksi Semester 7
+prob_sem7 <- prob_sem6 %*% transition_matrix_prob
+
+# Prediksi Semester 8
+prob_sem8 <- prob_sem7 %*% transition_matrix_prob
+
+# Tabel Hasil
+hasil <- data.frame(
+  IP = states,
+  Sem6 = round(prob_sem6 * n_mhs),
+  Sem7 = round(as.numeric(prob_sem7) * n_mhs),
+  Sem8 = round(as.numeric(prob_sem8) * n_mhs),
+  Sem6_Persen = round(prob_sem6 * 100, 1),
+  Sem7_Persen = round(as.numeric(prob_sem7) * 100, 1),
+  Sem8_Persen = round(as.numeric(prob_sem8) * 100, 1)
+)
+
+kable(hasil, caption = "Prediksi Jumlah Mahasiswa Semester 7 & 8")
+```
+
+## 10. Visualisasi Prediksi
+
+```{r}
+plot_data <- data.frame(
+  Semester = rep(c("Sem 6", "Sem 7", "Sem 8"), each = 4),
+  IP = rep(states, 3),
+  Jumlah = c(hasil$Sem6, hasil$Sem7, hasil$Sem8)
+)
+
+ggplot(plot_data, aes(x = IP, y = Jumlah, fill = Semester)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = Jumlah), 
+            position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Prediksi Jumlah Mahasiswa Semester 7 & 8",
+       x = "Kategori IP", y = "Jumlah Mahasiswa") +
+  theme_minimal()
+```
+
+## 11. Probabilitas N-Langkah
+
+```{r}
+# 2 Langkah (Sem 6 ke 8)
+P2 <- transition_matrix_prob %*% transition_matrix_prob
+cat("Matriks P^2 (2 Langkah):\n")
+print(round(P2, 4))
+
+# 3 Langkah
+P3 <- P2 %*% transition_matrix_prob
+cat("\nMatriks P^3 (3 Langkah):\n")
+print(round(P3, 4))
+```
+P2
+
+Mahasiswa IP C di semester 6:
+
+30.80% naik ke IP A di semester 8
+30.59% naik ke IP B di semester 8
+33.62% tetap di IP C di semester 8
+4.99% turun ke IP D di semester 8
+Mahasiswa IP B di semester 6:
+
+44.68% naik ke IP A di semester 8
+34.80% tetap di IP B di semester 8
+
+P3 
+
+
+## 12. Validasi Monte Carlo
+
+```{r}
+set.seed(123)
+n_sim <- 10000
+
+# Simulasi Semester 7
+sim_sem7 <- character(n_sim)
+for(i in 1:n_sim) {
+  s <- sample(states, 1, prob = prob_sem6)
+  sim_sem7[i] <- sample(states, 1, prob = transition_matrix_prob[s,])
+}
+
+# Simulasi Semester 8
+sim_sem8 <- character(n_sim)
+for(i in 1:n_sim) {
+  s <- sample(states, 1, prob = prob_sem6)
+  s2 <- sample(states, 1, prob = transition_matrix_prob[s,])
+  sim_sem8[i] <- sample(states, 1, prob = transition_matrix_prob[s2,])
+}
+
+# Perbandingan
+validasi <- data.frame(
+  IP = states,
+  Sem7_Analitik = round(as.numeric(prob_sem7), 4),
+  Sem7_Simulasi = sapply(states, function(x) mean(sim_sem7 == x)),
+  Sem8_Analitik = round(as.numeric(prob_sem8), 4),
+  Sem8_Simulasi = sapply(states, function(x) mean(sim_sem8 == x))
+)
+
+kable(validasi, digits = 4, caption = "Validasi: Analitik vs Monte Carlo")
+```
+
+## 13. Mean First Passage Time
+
+```{r}
+if(is.irreducible(mc)) {
+  mfpt <- meanFirstPassageTime(mc)
+  cat("Mean First Passage Time (Semester):\n")
+  print(round(mfpt, 2))
+  
+  cat("\nWaktu rata-rata mencapai IP A:\n")
+  for(s in states[-1]) {
+    cat(sprintf("  Dari %s: %.2f semester\n", s, mfpt[s, "A"]))
+  }
+}
+```
