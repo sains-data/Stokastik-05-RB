@@ -65,7 +65,7 @@ Hasil **mendekati perhitungan analitik**, menandakan model mampu menangkap pola 
 
 | **Nama**                      | **NIM**   |
 | ----------------------------- | --------- |
-| **Eksanty F Sugma Islamiaty** | 122450001 |
+| Eksanty F Sugma Islamiaty | 122450001 |
 | Arafi Ramadhan Maulana        | 122450002 |
 | Kayla Amanda Sukma            | 122450086 |
 | Aditya Rahman                 | 122450113 |
