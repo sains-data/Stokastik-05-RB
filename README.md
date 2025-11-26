@@ -49,17 +49,18 @@ Hasil **mendekati perhitungan analitik**, menandakan model mampu menangkap pola 
 
 ## 📁 Struktur Repository
 
-├── data/
-│   └── Dataset_5_RB.csv
-├── report/
-│   └── Code_5_RB.Rmd
-├── analysis/
-│   └── Laporan_5_RB.pdf
-├── video/
-│   └── Video_5_RB.mp4
-├── poster/
-│   └── Poster_5_RB.pdf
-└── README.md
+📦 project-root
+├── 📂 data
+│ └── 📄 Dataset_5_RB.csv
+├── 📂 analysis
+│ └── 📄 Laporan_5_RB.pdf
+├── 📂 report
+│ └── 📄 Code_5_RB.Rmd
+├── 📂 poster
+│ └── 📄 Poster_5_RB.pdf
+├── 📂 video
+│ └── 🎬 Video_5_RB.mp4
+└── 📄 README.md
 
 ## 🫅 Kontributor
 
