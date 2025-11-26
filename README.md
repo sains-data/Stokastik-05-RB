@@ -47,21 +47,6 @@ Hasil **mendekati perhitungan analitik**, menandakan model mampu menangkap pola 
 - `Data Visualization (ggplot2 / base R)`
 - `Monte Carlo Simulation`
 
-## 📁 Struktur Repository
-
-📦 project-root
-├── 📂 data
-│ └── 📄 Dataset_5_RB.csv
-├── 📂 analysis
-│ └── 📄 Laporan_5_RB.pdf
-├── 📂 report
-│ └── 📄 Code_5_RB.Rmd
-├── 📂 poster
-│ └── 📄 Poster_5_RB.pdf
-├── 📂 video
-│ └── 🎬 Video_5_RB.mp4
-└── 📄 README.md
-
 ## 🫅 Kontributor
 
 | **Nama**                      | **NIM**   |
