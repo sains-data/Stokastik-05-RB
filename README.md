@@ -46,6 +46,11 @@ Hasil **mendekati perhitungan analitik**, menandakan model mampu menangkap pola 
 - `Matrix operations`
 - `Data Visualization (ggplot2 / base R)`
 - `Monte Carlo Simulation`
+  
+## 🎬 Video Perkenalan Tugas Besar
+
+Tonton video kami pada link berikut:  
+🔗 https://bit.ly/VideoPemstokRB_05
 
 ## 🫅 Kontributor
 
